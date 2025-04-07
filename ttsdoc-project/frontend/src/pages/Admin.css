@@ -1,0 +1,22 @@
+/* filepath: /d:/OneDrive - T.T.S.Engineering(2004) Co., Ltd/TTSdoc/ttsdoc-project/frontend/src/pages/Admin.css */
+.admin-container {
+    /* Add your styles here */
+}
+
+.error-message {
+    color: red;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #ffe6e6;
+    border: 1px solid #ff9999;
+    border-radius: 4px;
+}
+
+.data-list {
+    margin-top: 20px;
+}
+
+.data-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=bimcollaboration.mysql.database.azure.com
+      - DB_PORT=3306
+      - DB_USER=dbadmin
+      - DB_PASSWORD=Dbtts2004
+      - DB_DATABASE=railway
+      - GOOGLE_CREDENTIALS_PATH=/run/secrets/google_credentials.json
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    secrets:
+      - google_credentials
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://backend:3000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+secrets:
+  google_credentials:
+    file: ./secrets/google_credentials.json

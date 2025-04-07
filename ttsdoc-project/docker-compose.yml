@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=bimcollaboration.mysql.database.azure.com
+      - DB_PORT=3306
+      - DB_USER=dbadmin
+      - DB_PASSWORD=Dbtts2004
+      - DB_DATABASE=railway
+      - GOOGLE_CREDENTIALS_PATH=/run/secrets/google_credentials.json
+      # เพิ่ม CORS_ORIGIN ให้รองรับ frontend container
+      - CORS_ORIGIN=http://localhost:3001
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    secrets:
+      - google_credentials
+    container_name: backend
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # ส่ง API URL ไปยัง build process ของ React
+        - REACT_APP_API_URL=http://localhost:3001  # URL ที่ browser จะใช้เข้าถึง
+    ports:
+      - "3001:80"  # map พอร์ต 80 ของ container ไปที่ 3001 บน host
+    volumes:
+      # เพิ่ม volume สำหรับ nginx config
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+    container_name: frontend
+
+secrets:
+  google_credentials:
+    file: ./secrets/google_credentials.json

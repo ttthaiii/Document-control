@@ -1,0 +1,751 @@
+/* global.css - CSS กลางสำหรับทุกคอมโพเนนต์ในแอพพลิเคชัน */
+
+/******************************
+ * 1. รูปแบบพื้นฐานทั่วไป
+ ******************************/
+
+/* อัปเดตรูปแบบส่วนนี้ตามที่คุณต้องการ */
+
+
+/******************************
+ * 2. ปุ่มและองค์ประกอบแสดงผล
+ ******************************/
+
+/* ปุ่มหลักและปุ่มส่ง */
+.submit-button, 
+.update-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    min-width: 150px;
+    transition: background-color 0.3s;
+    cursor: pointer;
+    text-align: center;
+}
+
+.submit-button:hover:not(:disabled),
+.update-button:hover:not(:disabled) {
+    background-color: #3e8e41;
+}
+
+.submit-button:disabled, 
+.update-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* ปุ่มใช้งานเฉพาะ (Export, New Document) */
+.new-document-btn, .export-btn {
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.export-btn {
+    background-color: #2196F3;
+}
+
+.new-document-btn:hover, .export-btn:hover {
+    opacity: 0.9;
+}
+
+.new-document-btn:disabled, .export-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* ปุ่มปิด (X) */
+.close-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #ff5252;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+}
+
+.close-button:hover {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+/* ปุ่มลบไฟล์ - สีแดง */
+.remove-file-btn {
+    background-color: #ff5252;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+}
+
+.remove-file-btn:hover {
+    background-color: #d32f2f;
+    transform: scale(1.05);
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    border-radius: 8px;
+}
+
+.document-details-modal .modal-content {
+    position: relative;
+}
+
+/******************************
+ * 3. ฟอร์มและองค์ประกอบนำเข้า
+ ******************************/
+
+/* กลุ่มข้อมูลในฟอร์ม */
+.form-group {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input[type="text"],
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    color: #333;
+    font-size: 14px;
+}
+
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f8f8f8;
+    margin-bottom: 10px;
+}
+
+/* แถวในฟอร์ม */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.form-row .form-group {
+    flex: 1;
+    min-width: 250px;
+}
+
+/* ส่วนของการกระทำ (ปุ่มส่ง) */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.form-actions .submit-button {
+    max-width: 200px;
+}
+
+/* สำหรับกลุ่มอัพโหลดไฟล์ */
+.file-upload-group {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* ตกแต่งปุ่มเลือกไฟล์ */
+input[type="file"]::file-selector-button {
+    border: 1px solid #ddd;
+    padding: 8px 16px;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    color: #333;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: all 0.2s;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background-color: #e0e0e0;
+}
+
+/* ข้อความช่วยเหลือในฟอร์ม */
+.form-helper-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+}
+
+
+/******************************
+ * 4. ส่วนแสดงไฟล์ที่เลือก
+ ******************************/
+
+/* คอนเทนเนอร์สำหรับส่วนแสดงชื่อไฟล์ */
+.selected-files {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f7f7f7;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* หัวข้อส่วนไฟล์ */
+.files-heading {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 14px;
+}
+
+/* รายการไฟล์ */
+.file-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* รายการไฟล์แต่ละรายการ */
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid #eaeaea;
+    font-size: 13px;
+    color: #555;
+    word-break: break-all;
+    background-color: #fff;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.file-item:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+/* ลิงก์ไฟล์ */
+.file-link-container {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+    margin-bottom: 8px;
+    justify-content: left;
+    width: 100%;
+}
+
+.file-link-container:last-child {
+    margin-bottom: 0;
+}
+
+.file-bullet {
+    margin-right: 8px;
+    color: #4CAF50;
+    font-size: 16px;
+}
+
+.view-file-link {
+    color: #2196F3;
+    text-decoration: none;
+    display: block;
+    word-break: break-word;
+    max-width: 400px;
+    transition: color 0.2s;
+    text-align: left;
+}
+
+.view-file-link:hover {
+    text-decoration: underline;
+}
+
+
+/******************************
+ * 5. โมดัลและหน้าต่าง
+ ******************************/
+
+/* หน้าต่างโมดัล */
+.document-details-modal,
+.new-document-modal {
+    background-color: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* เนื้อหาโมดัล */
+.modal-content {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 95%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 25px;
+}
+
+/* ส่วนหัวโมดัล */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eaeaea;
+    margin-bottom: 15px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+    line-height: 1.4;
+    flex: 1;
+}
+
+/* ข้อมูลเอกสาร */
+.document-info {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.document-info p {
+    margin: 8px 0;
+    color: #444;
+}
+
+/* ส่วนการอัปเดต */
+.update-section {
+    margin-top: 20px;
+    width: 100%;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.modal-success {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.modal-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/******************************
+ * 6. แดชบอร์ด RFA
+ ******************************/
+
+/* คอนเทนเนอร์หลัก */
+.rfa-dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.rfa-dashboard-container h1 {
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* รูปแบบส่วนหัวแดชบอร์ด */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* ตัวเลือกโครงการ */
+.site-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.site-selector select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    min-width: 200px;
+}
+
+/* รูปแบบแผนภูมิ */
+.dashboard-charts {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.chart-container {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+}
+
+.chart-container h2 {
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+    color: #444;
+}
+
+.donut-chart {
+    height: auto;
+    min-height: 300px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 0;
+}
+
+.chart-note {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 10px;
+}
+
+.chart-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.donut-center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.count-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.count-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* รูปแบบการค้นหาและตัวกรอง */
+.search-filter-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 300px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.filter-options {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.filter-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.status-filter {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* รูปแบบตาราง */
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+.documents-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.documents-table th,
+.documents-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+.documents-table th {
+    background-color: #f2f2f2;
+    position: sticky;
+    top: 0;
+}
+
+.documents-table tr:hover {
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+.documents-table tr.selected-row {
+    background-color: #e6f7ff;
+}
+
+/* สีแถวตามสถานะ */
+.documents-table tr.status-bim {
+    background-color: rgba(255, 215, 0, 0.1);
+}
+
+.documents-table tr.status-site {
+    background-color: rgba(255, 99, 132, 0.1);
+}
+
+.documents-table tr.status-cm {
+    background-color: rgba(54, 162, 235, 0.1);
+}
+
+.documents-table tr.status-approved {
+    background-color: rgba(75, 192, 192, 0.1);
+}
+
+/* ข้อความเมื่อไม่มีเอกสาร */
+.no-documents-message {
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    color: #666;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+/* รูปแบบข้อความ */
+.error-message,
+.success-message {
+    padding: 12px 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.error-message {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+}
+
+.success-message {
+    background-color: #e8f5e9;
+    color: #388e3c;
+    border: 1px solid #c8e6c9;
+}
+
+/* โหลดดิ้งสปินเนอร์ */
+.spinner-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+
+.spinner {
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+/* การตอบสนองอุปกรณ์เคลื่อนที่ */
+@media (max-width: 768px) {
+    .dashboard-header,
+    .search-filter-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-options {
+        margin-top: 10px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .chart-container {
+        padding: 10px;
+    }
+    
+    .donut-chart {
+        height: 250px;
+    }
+}
+
+.success-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.success-modal {
+    background-color: white;
+    border-radius: 8px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.success-icon {
+    color: #4CAF50;
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.close-success-btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.close-success-btn:hover {
+    background-color: #45a049;
+}
+/******************************
+ * 7. ฟอร์มเอกสารใหม่
+ ******************************/
+
+.new-document-form {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.document-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
