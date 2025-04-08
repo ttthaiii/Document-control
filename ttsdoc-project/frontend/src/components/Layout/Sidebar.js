@@ -13,7 +13,7 @@ const Sidebar = ({ isOpen }) => {
 
   // ย้ายฟังก์ชันมาไว้ข้างบน
   const isRFAAuthorized = () => {
-    const authorizedPositions = ['BIM', 'Adminsite', 'OE', 'CM'];
+    const authorizedPositions = ['BIM', 'Adminsite', 'OE', 'CM', 'Adminsite2'];
     return authorizedPositions.includes(userData?.jobPosition);
   };
   

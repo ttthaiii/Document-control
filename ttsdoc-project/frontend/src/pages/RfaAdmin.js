@@ -3,10 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DocumentProvider } from '../contexts/DocumentContext';
 import { useDocumentContext } from '../contexts/DocumentContext';
-import DocumentTable from '../components/shared/DocumentTable';
-import DocumentForm from '../components/shared/DocumentForm';
 import api from '../services/api';
 import './RfaAdmin.css';
+
+// นำเข้าคอมโพเนนต์ใหม่
+import DocumentViewer from '../components/document/DocumentViewer';
+import DocumentUpdateForm from '../components/document/DocumentUpdateForm';
+import DocumentStatusForm from '../components/document/DocumentStatusForm';
+import { canEditDocument } from '../utils/documentUtils';
 
 // ฟังก์ชัน debounce สำหรับการค้นหา
 const debounce = (func, wait) => {
@@ -29,6 +33,7 @@ const RfaAdminContent = ({ user }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   
   const { 
     documents, 
@@ -149,9 +154,53 @@ const RfaAdminContent = ({ user }) => {
   // ฟังก์ชันที่เรียกเมื่อฟอร์มถูกปิด
   const handleFormClose = (result) => {
     setSelectedDocument(null);
+    setSuccessMessage('');
     
     if (result === 'success') {
       loadDocuments();
+    }
+  };
+
+  // ฟังก์ชันสำหรับจัดการการส่งฟอร์มอัพเดทสถานะ
+  const handleStatusUpdateSubmit = async (formData) => {
+    setIsSubmitting(true);
+    
+    const submitData = new FormData();
+    submitData.append('documentId', formData.documentId);
+    submitData.append('selectedStatus', formData.status);
+    
+    // ตรวจสอบว่า file เป็น array หรือไม่
+    if (formData.file && formData.file.length > 0) {
+      // ถ้าเป็น array ให้ loop เพิ่มทีละไฟล์
+      formData.file.forEach((file) => {
+        submitData.append('documents', file);
+      });
+    }
+
+    try {
+      const response = await api.post('/api/user/rfa/update-status', submitData);
+
+      if (response.data.success) {
+        // โหลดเอกสารใหม่
+        loadDocuments();
+        
+        // แสดงข้อความสำเร็จในฟอร์ม
+        setSuccessMessage('อัพเดทสถานะสำเร็จ');
+        
+        // ปิด loading หลังจาก 2 วินาที
+        setTimeout(() => {
+          setIsSubmitting(false);
+          setSelectedDocument(null);
+          setSuccessMessage('');
+        }, 2000);
+      } else {
+        setIsSubmitting(false);
+        showError(response.data.error || 'เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      setIsSubmitting(false);
+      showError('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
     }
   };
 
@@ -185,16 +234,81 @@ const RfaAdminContent = ({ user }) => {
       {success && <div className="success-message">{success}</div>}
 
       {/* แสดงตาราง */}
-      <DocumentTable 
-        onRowClick={showDocumentDetails} 
-        isAdmin={true} 
-      />
+      <div className="table-container">
+        <table className="results-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>หมายเลขเอกสาร</th>
+              <th>รายชื่อเอกสาร</th>
+              <th>สถานะ</th>
+              <th>ไฟล์แนบ</th>
+              <th>วันที่</th>
+              <th>ผู้ส่ง</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredDocuments.map((doc, index) => {
+              const documentId = doc.full_document_number || `${doc.category_code}-${doc.document_number}_${doc.revision_number}`;
+              
+              return (
+                <tr 
+                  key={doc.id}
+                  className={selectedDocument && selectedDocument.id === doc.id ? 'selected-row' : ''}
+                  onClick={() => showDocumentDetails(doc)}
+                >
+                  <td>{index + 1}</td>
+                  <td>{documentId}</td>
+                  <td>{doc.title}</td>
+                  <td>{doc.status}</td>
+                  <td>
+                    {doc.files && doc.files.map((file, idx) => (
+                      <div key={idx} className="file-link-container">
+                        <span className="file-bullet">•</span>
+                        <a 
+                          href={file.file_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="view-file-link"
+                        >
+                          {file.file_name || `ไฟล์ ${idx+1}`}
+                        </a>
+                      </div>
+                    ))}
+                    {!doc.files && doc.file_url && 
+                      <div className="file-link-container">
+                        <span className="file-bullet">•</span>
+                        <a 
+                          href={doc.file_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="view-file-link"
+                        >
+                          {doc.file_name || doc.title || "ดูไฟล์"}
+                        </a>
+                      </div>
+                    }
+                  </td>
+                  <td>{doc.updated_at || doc.created_at}</td>
+                  <td>{doc.updated_by_name || doc.created_by_name}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       
-      {/* แสดงฟอร์มรายละเอียดเอกสาร */}
-      {selectedDocument && (
-        <DocumentForm 
+      {/* แสดงฟอร์มรายละเอียดเอกสาร - ใช้คอมโพเนนต์ใหม่ */}
+      {selectedDocument && canEditDocument(user?.jobPosition, selectedDocument?.status) && (
+        <DocumentStatusForm
+          document={selectedDocument}
+          user={user}
+          onSubmit={handleStatusUpdateSubmit}
           onClose={handleFormClose}
-          isAdmin={true}
+          loading={isSubmitting}
+          successMessage={successMessage}
         />
       )}
 

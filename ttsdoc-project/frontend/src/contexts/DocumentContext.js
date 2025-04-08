@@ -10,7 +10,7 @@ export function useDocumentContext() {
 export function DocumentProvider({ children }) {
   const [documents, setDocuments] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [filteredDocuments, setFilteredDocuments] = useState([]);

@@ -108,61 +108,105 @@ const searchDocuments = async (req, res) => {
 // อัพเดทสถานะเอกสาร
 const updateDocumentStatus = async (req, res) => {
     try {
-        console.log('Request body:', req.body);
-        console.log('Request file:', req.file);
-        
-        const { documentId, selectedStatus } = req.body;
-        const userId = req.user.id;
-        const position = req.user.jobPosition;
-
-        console.log('updateDocumentStatus called:', { documentId, selectedStatus, position });
-
-        // ตรวจสอบสถานะที่อนุญาตตามตำแหน่งงาน
-        let allowedStatuses;
-        // ...โค้ดตรวจสอบสถานะคงเดิม...
-
-        if (!allowedStatuses.includes(selectedStatus)) {
-            throw new Error('สถานะที่เลือกไม่ได้รับอนุญาต');
-        }
-
-        let newDocumentId = null;
-
-        // อัพโหลดไฟล์ใหม่ (ถ้ามี)
-        if (req.file) {
-            console.log('Uploading file:', req.file.originalname);
-            
-            // ใช้ FileService แทนการเขียนโค้ดอัปโหลดโดยตรง
-            const fileInfo = await FileService.uploadFile(userId, req.file);
-            newDocumentId = fileInfo.documentId;
-        }
-
-        // อัพเดทสถานะเอกสาร
-        await RfaModel.updateDocumentStatus(
-            documentId, 
-            selectedStatus, 
-            userId, 
-            newDocumentId
-        );
-
-        res.json({
-            success: true,
-            message: 'อัพเดทสถานะเอกสารสำเร็จ'
-        });
-
+      console.log('Request body:', req.body);
+      console.log('Request file:', req.file);
+  
+      const { documentId, selectedStatus } = req.body;
+      const userId = req.user.id;
+      const position = req.user.jobPosition;
+  
+      console.log('updateDocumentStatus called:', { documentId, selectedStatus, position });
+  
+      // ตรวจสอบสถานะที่อนุญาตตามตำแหน่งงาน
+      let allowedStatuses;
+      if (position === 'BIM') {
+        allowedStatuses = ['แก้ไข', 'ไม่อนุมัติ', 'อนุมัติตามคอมเมนต์ (ต้องแก้ไข)'];
+      } else if (position === 'Adminsite') {
+        allowedStatuses = ['ส่ง CM'];
+      } else if (position === 'Adminsite2') {
+        allowedStatuses = ['ส่ง CM'];
+      } else if (position === 'CM') {
+        allowedStatuses = [
+          'อนุมัติ',
+          'อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)',
+          'อนุมัติตามคอมเมนต์ (ต้องแก้ไข)',
+          'ไม่อนุมัติ'
+        ];
+      } else {
+        throw new Error('ตำแหน่งงานไม่ถูกต้อง');
+      }
+  
+      if (!allowedStatuses.includes(selectedStatus)) {
+        throw new Error('สถานะที่เลือกไม่ได้รับอนุญาต');
+      }
+  
+      let newDocumentId = null;
+  
+      // อัพโหลดไฟล์ใหม่ (ถ้ามี)
+      if (req.file) {
+        console.log('Uploading file:', req.file.originalname);
+        const fileInfo = await FileService.uploadFile(userId, req.file);
+        newDocumentId = fileInfo.documentId;
+      }
+  
+      // ✅ โหลดสถานะเดิมจาก DB
+      const document = await RfaModel.getDocumentById(documentId);
+      if (!document) {
+        return res.status(404).json({ success: false, error: 'ไม่พบเอกสาร' });
+      }
+  
+      const prevStatus = document.status;
+      const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  
+      // ✅ เตรียมข้อมูลอัปเดต
+      const updateFields = {
+        status: selectedStatus,
+        updated_by: userId,
+      };
+  
+      // ✅ เงื่อนไขวันที่ส่งอนุมัติ
+      if (prevStatus === 'BIM ส่งแบบ' && selectedStatus === 'ส่ง CM') {
+        updateFields.send_approval_date = currentDate;
+      }
+  
+      // ✅ เงื่อนไขวันที่อนุมัติ
+      const approvalStatuses = [
+        'อนุมัติ',
+        'อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)',
+        'อนุมัติตามคอมเมนต์ (ต้องแก้ไข)',
+        'ไม่อนุมัติ'
+      ];
+      if (approvalStatuses.includes(selectedStatus)) {
+        updateFields.approval_date = currentDate;
+      }
+  
+      // ✅ อัปเดต revision_id ถ้ามีไฟล์แนบใหม่
+      if (newDocumentId) {
+        updateFields.revision_id = newDocumentId;
+      }
+  
+      // ✅ เรียก update ที่ model
+      await RfaModel.updateDocumentFields(documentId, updateFields);
+  
+      res.json({
+        success: true,
+        message: 'อัปเดตสถานะเอกสารสำเร็จ'
+      });
+  
     } catch (error) {
-        console.error('Error in updateDocumentStatus:', error);
-        
-        // ทำความสะอาดไฟล์ที่อาจจะค้างอยู่
-        if (req.file?.path) {
-            await FileService.deleteTemporaryFile(req.file.path);
-        }
-        
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+      console.error('Error in updateDocumentStatus:', error);
+  
+      // ลบไฟล์ชั่วคราวถ้ามี
+      if (req.file?.path) {
+        await FileService.deleteTemporaryFile(req.file.path);
+      }
+  
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
     }
-};
+  };
 
 // Export ฟังก์ชันทั้งหมด
 module.exports = {

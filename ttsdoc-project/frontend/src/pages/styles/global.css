@@ -125,6 +125,38 @@
     position: relative;
 }
 
+.spinner-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* ให้อยู่ด้านบนสุด */
+}
+
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  width: 100%;
+}
+
+.loading-indicator .spinner {
+  margin-bottom: 15px;
+}
+
+.loading-indicator p {
+  font-size: 16px;
+  color: #666;
+}
+
 /******************************
  * 3. ฟอร์มและองค์ประกอบนำเข้า
  ******************************/
@@ -506,6 +538,13 @@ input[type="file"]::file-selector-button:hover {
     font-weight: bold;
     color: #333;
 }
+
+.chart-empty-message {
+    text-align: center;
+    font-size: 16px;
+    color: #888;
+    padding: 40px 0;
+  }
 
 /* รูปแบบการค้นหาและตัวกรอง */
 .search-filter-section {

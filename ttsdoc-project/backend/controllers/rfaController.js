@@ -16,7 +16,7 @@ const initialStatus = "BIM ส่งแบบ";
 
 // ตรวจสอบการอนุญาต RFA - คงไว้ แต่อาจย้ายไปที่ roleMiddleware ในอนาคต
 const checkRFAPermission = (jobPosition) => {
-    const authorizedPositions = ['BIM', 'Adminsite', 'OE', 'CM'];
+    const authorizedPositions = ['BIM', 'Adminsite', 'OE', 'CM', 'Adminsite2'];
     return authorizedPositions.includes(jobPosition);
 };
 

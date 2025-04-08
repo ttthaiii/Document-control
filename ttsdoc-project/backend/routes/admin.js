@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const { isLoggedIn, isAdmin } = require('../middleware/auth');
+const { authenticateUser, checkAdminAccess } = require('../middleware/roleMiddleware');
+
 // Apply auth middleware to all admin routes
-router.use(isLoggedIn);
-router.use(isAdmin);
+router.use(authenticateUser); // ตรวจสอบ token ก่อน
+router.use(checkAdminAccess); // ตรวจสอบสิทธิ์แอดมิน
 
 // Admin main routes
 router.get('/', adminController.getAdminPage);
