@@ -267,6 +267,8 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
         r.title,
         r.full_document_number, 
         DATE_FORMAT(r.created_at, '%d/%m/%Y') as created_at,
+        DATE_FORMAT(r.send_approval_date, '%d/%m/%Y') as send_approval_date,
+        DATE_FORMAT(r.approval_date, '%d/%m/%Y') as approval_date,
         u.username as created_by_name,
         uu.username as updated_by_name,
         wc.category_name,
@@ -309,6 +311,22 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
       WHERE site_id = ? AND full_document_number = ?
     `, [siteId, fullDocumentNumber]);
   }
+
+  static async updateDocumentFields(documentId, updateFields) {
+    return Database.transaction(async (connection) => {
+      // สร้าง SQL query จาก updateFields
+      const keys = Object.keys(updateFields);
+      const values = Object.values(updateFields);
+      
+      if (keys.length === 0) return true;
+      
+      const setClauses = keys.map((key, index) => `${key} = ?`).join(', ');
+      const query = `UPDATE rfa_documents SET ${setClauses} WHERE id = ?`;
+      
+      await connection.query(query, [...values, documentId]);
+      return true;
+    });
+  }  
 }
 
 module.exports = RfaModel;
