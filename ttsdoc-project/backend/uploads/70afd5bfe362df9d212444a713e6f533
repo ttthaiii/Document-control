@@ -1,0 +1,10 @@
+Field,Type,Null,Key,Default,Extra
+id,int,NO,PRI,NULL,auto_increment
+user_id,int,NO,MUL,NULL,
+file_name,varchar(255),NO,,NULL,
+file_url,text,YES,,NULL,
+file_size,bigint,YES,,NULL,
+mime_type,varchar(100),YES,,NULL,
+google_file_id,varchar(255),NO,MUL,NULL,
+uploaded_at,timestamp,YES,,CURRENT_TIMESTAMP,DEFAULT_GENERATED
+updated_at,timestamp,YES,,NULL,"on update CURRENT_TIMESTAMP"

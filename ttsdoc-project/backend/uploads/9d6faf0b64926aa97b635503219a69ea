@@ -1,0 +1,5 @@
+Field,Type,Null,Key,Default,Extra
+id,int,NO,PRI,NULL,auto_increment
+user_id,int,NO,MUL,NULL,
+site_id,int,NO,MUL,NULL,
+created_at,timestamp,YES,,CURRENT_TIMESTAMP,DEFAULT_GENERATED

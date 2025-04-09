@@ -88,24 +88,27 @@ const RfaAdminContent = ({ user }) => {
   };
 
   // โหลดเอกสารทั้งหมด
-  const loadDocuments = async () => {
+  const loadDocuments = async (forceRefresh = false) => {
     try {
-      console.log('Loading documents...');
       setLoading(true);
+      setError('');
       
-      const response = await api.get('/api/user/rfa/documents');
+      // เพิ่ม timestamp เพื่อป้องกันการแคชข้อมูล
+      const timestamp = forceRefresh ? `?t=${Date.now()}` : '';
+      const response = await api.get(`/api/user/rfa/documents/${selectedSite}${timestamp}`);
       
       if (response.data.success) {
         setDocuments(response.data.documents);
         setFilteredDocuments(response.data.documents);
       } else {
-        showError(response.data.error || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        showError(response.data.error || 'เกิดข้อผิดพลาดในการโหลดข้อมูลเอกสาร');
       }
     } catch (error) {
       console.error('Error loading documents:', error);
-      showError('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
+      showError('เกิดข้อผิดพลาดในการโหลดข้อมูลเอกสาร');
     } finally {
       setLoading(false);
+      setIsInitialLoad(false); // ตั้งค่านี้เป็น false เพื่อให้ spinner หายไป
     }
   };
 
@@ -157,12 +160,13 @@ const RfaAdminContent = ({ user }) => {
     setSuccessMessage('');
     
     if (result === 'success') {
-      loadDocuments();
+      loadDocuments(true);
     }
   };
 
   // ฟังก์ชันสำหรับจัดการการส่งฟอร์มอัพเดทสถานะ
   const handleStatusUpdateSubmit = async (formData) => {
+    setLoading(true);
     setIsSubmitting(true);
     console.log('Sending update request with data:', formData);
     
@@ -185,7 +189,7 @@ const RfaAdminContent = ({ user }) => {
       if (response.data.success) {
         // โหลดเอกสารใหม่พร้อมบังคับให้ไม่ใช้ cache
         console.log('Reloading documents with force refresh...');
-        loadDocuments(true);
+        await loadDocuments(true);
         
         // แสดงข้อความสำเร็จในฟอร์ม
         setSuccessMessage('อัพเดทสถานะสำเร็จ');

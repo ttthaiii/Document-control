@@ -1,0 +1,8 @@
+Field,Type,Null,Key,Default,Extra
+id,int,NO,PRI,NULL,auto_increment
+rfa_id,int,NO,MUL,NULL,
+action,"enum('created','updated','status_changed')",NO,,NULL,
+status,"enum('BIM ส่งแบบ','ส่ง CM','อนุมัติ','อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)','อนุมัติตามคอมเมนต์ (ต้องแก้ไข)','ไม่อนุมัติ','แก้ไข')",YES,,NULL,
+remarks,text,YES,,NULL,
+user_id,int,NO,MUL,NULL,
+created_at,timestamp,YES,,CURRENT_TIMESTAMP,DEFAULT_GENERATED

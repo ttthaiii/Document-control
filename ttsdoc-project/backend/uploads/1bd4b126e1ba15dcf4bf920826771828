@@ -1,0 +1,9 @@
+Field,Type,Null,Key,Default,Extra
+id,int,NO,PRI,NULL,auto_increment
+category_code,varchar(10),NO,MUL,NULL,
+category_name,varchar(255),NO,,NULL,
+site_id,int,NO,MUL,NULL,
+description,text,YES,,NULL,
+active,tinyint(1),YES,,1,
+created_at,timestamp,YES,,CURRENT_TIMESTAMP,DEFAULT_GENERATED
+updated_at,timestamp,YES,,NULL,"on update CURRENT_TIMESTAMP"

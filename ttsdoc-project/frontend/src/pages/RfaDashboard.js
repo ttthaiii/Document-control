@@ -186,19 +186,18 @@ const RfaDashboardContent = ({ user }) => {
   };
 
   // โหลดเอกสาร
-  const loadDocuments = async (forceReload = false) => {
+  const loadDocuments = async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError('');
-  
-      // เพิ่มการป้องกัน cache โดยใช้ timestamp
-      const timestamp = forceReload ? `?t=${Date.now()}` : '';
+      
+      // เพิ่ม timestamp เพื่อป้องกันการแคชข้อมูล
+      const timestamp = forceRefresh ? `?t=${Date.now()}` : '';
       const response = await api.get(`/api/user/rfa/documents/${selectedSite}${timestamp}`);
       
-      console.log("📦 Loaded documents for site:", selectedSite, response.data.documents.length);
-  
       if (response.data.success) {
         setDocuments(response.data.documents);
+        setFilteredDocuments(response.data.documents);
       } else {
         showError(response.data.error || 'เกิดข้อผิดพลาดในการโหลดข้อมูลเอกสาร');
       }
@@ -206,8 +205,8 @@ const RfaDashboardContent = ({ user }) => {
       console.error('Error loading documents:', error);
       showError('เกิดข้อผิดพลาดในการโหลดข้อมูลเอกสาร');
     } finally {
-      setIsInitialLoad(false);
       setLoading(false);
+      setIsInitialLoad(false); // ตั้งค่านี้เป็น false เพื่อให้ spinner หายไป
     }
   };
 

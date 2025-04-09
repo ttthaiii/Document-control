@@ -3,6 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const driveService = require('../config/googleDrive');
 const DocumentModel = require('../models/documentModel');
+const Database = require('../models/database');
 
 class FileService {
   /**
@@ -75,38 +76,63 @@ class FileService {
    * @param {Object} file - ข้อมูลไฟล์ที่ได้จาก multer
    * @returns {Promise<Object>} - ข้อมูลเอกสารที่บันทึกแล้ว
    */
-  static async uploadRfaDocumentFile(rfaDocumentId, userId, file, status) {
-    return Database.transaction(async (connection) => {
-      // ดึงสถานะปัจจุบันของเอกสาร
-      const [document] = await connection.query(
-        'SELECT status FROM rfa_documents WHERE id = ?',
-        [rfaDocumentId]
+  static async uploadRfaDocumentFile(rfaDocumentId, userId, file, status = null) {
+    try {
+      // ถอดรหัสชื่อไฟล์ให้เป็น UTF-8
+      const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      
+      // อัปโหลดไฟล์ไปยัง Google Drive
+      const uploadResult = await driveService.uploadToDrive(
+        userId,
+        file.path,
+        fileName,
+        file.mimetype
       );
       
-      const currentStatus = document[0]?.status || 'unknown';
+      // ดึงสถานะปัจจุบันของเอกสาร
+      if (!status) {
+        throw new Error('Missing required document status');
+      }
+      const currentStatus = status;
       
-      // อัพโหลดไฟล์ใหม่และบันทึกพร้อมสถานะ
-      // ตรวจสอบจากโค้ดเดิมว่าใช้ driveService หรือฟังก์ชันอื่น
-      const uploadResult = await driveService.uploadFile(file.path, file.originalname, file.mimetype);
+      console.log('Uploading file with status:', currentStatus);
       
-      // สร้างตัวแปรที่จำเป็น
-      const fileName = file.originalname;
-      const fileUrl = uploadResult.webViewLink || uploadResult.webContentLink;
-      const googleFileId = uploadResult.id;
-      
-      await connection.query(`
+      // บันทึกข้อมูลไฟล์พร้อมสถานะ
+      await Database.query(`
         INSERT INTO rfa_document_files
-        (rfa_document_id, document_status, file_name, file_url, google_file_id, created_by)
+        (rfa_document_id, document_status, file_name, file_url, google_file_id, user_id)
         VALUES (?, ?, ?, ?, ?, ?)
-      `, [rfaDocumentId, currentStatus, fileName, fileUrl, googleFileId, userId]);
+      `, [
+        rfaDocumentId,
+        currentStatus, // บันทึกสถานะที่ส่งมาหรือสถานะปัจจุบัน
+        fileName,
+        uploadResult.webViewLink,
+        uploadResult.id,
+        userId
+      ]);
       
       // อัพเดตวันที่ในตาราง rfa_documents
-      await connection.query(`
+      await Database.query(`
         UPDATE rfa_documents 
         SET updated_at = NOW() 
         WHERE id = ?
       `, [rfaDocumentId]);
-    });
+      
+      // ลบไฟล์ชั่วคราว
+      await this.deleteTemporaryFile(file.path);
+      
+      // ส่งคืนข้อมูล
+      return {
+        documentId: rfaDocumentId,
+        fileId: uploadResult.id,
+        fileName,
+        fileUrl: uploadResult.webViewLink
+      };
+    } catch (error) {
+      // ลบไฟล์ชั่วคราว
+      await this.deleteTemporaryFile(file.path);
+      throw error;
+    }
   }
   
   /**

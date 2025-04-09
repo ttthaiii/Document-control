@@ -272,7 +272,6 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
         r.document_number,
         r.revision_number,
         r.status,
-        r.previous_status,
         r.title,
         r.full_document_number, 
         DATE_FORMAT(r.created_at, '%d/%m/%Y') as created_at,
@@ -295,6 +294,8 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
     
     // ดึงข้อมูลไฟล์แนบสำหรับแต่ละเอกสาร - แก้ไขเพื่อดึงเฉพาะไฟล์ล่าสุดตามสถานะปัจจุบัน
     for (const doc of rfaDocs) {
+      /*console.log('Fetching files for document:', doc.id, 'with status:', doc.status);*/
+      
       // ดึงไฟล์ล่าสุดที่ตรงกับสถานะปัจจุบันของเอกสาร
       const files = await Database.query(`
         SELECT file_name, file_url, google_file_id
@@ -303,6 +304,8 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
         ORDER BY id DESC
         LIMIT 1
       `, [doc.id, doc.status]);
+      
+      /*console.log('Files found for current status:', files.length);*/
       
       // ถ้าไม่มีไฟล์ที่ตรงกับสถานะปัจจุบัน ให้ดึงไฟล์ล่าสุดแทน
       if (files.length === 0) {
@@ -314,6 +317,8 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
           LIMIT 1
         `, [doc.id]);
         
+        /*console.log('Using latest file instead:', latestFiles.length);*/
+        
         documents.push({
           ...doc,
           files: latestFiles
@@ -324,8 +329,7 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
           files: files
         });
       }
-    }
-    
+    }  
     return documents;
   }
 
@@ -343,20 +347,34 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
   }
 
   static async updateDocumentFields(documentId, updateFields) {
+    console.log('In updateDocumentFields:', { documentId, updateFields });
+    
     return Database.transaction(async (connection) => {
       // สร้าง SQL query จาก updateFields
       const keys = Object.keys(updateFields);
       const values = Object.values(updateFields);
       
-      if (keys.length === 0) return true;
+      if (keys.length === 0) {
+        console.log('No fields to update');
+        return true;
+      }
       
       const setClauses = keys.map((key, index) => `${key} = ?`).join(', ');
       const query = `UPDATE rfa_documents SET ${setClauses} WHERE id = ?`;
       
-      await connection.query(query, [...values, documentId]);
-      return true;
+      console.log('SQL Query:', query);
+      console.log('SQL Values:', [...values, documentId]);
+      
+      const [result] = await connection.query(query, [...values, documentId]);
+      console.log('SQL Update result:', result);
+      
+      if (result.affectedRows === 0) {
+        console.warn('No rows were updated!');
+      }
+      
+      return result.affectedRows > 0;
     });
-  }  
+  }
 }
 
 module.exports = RfaModel;

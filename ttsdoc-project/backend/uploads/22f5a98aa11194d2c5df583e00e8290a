@@ -1,0 +1,20 @@
+Field,Type,Null,Key,Default,Extra
+id,int,NO,PRI,NULL,auto_increment
+document_number,varchar(3),NO,MUL,NULL,
+revision_number,varchar(2),NO,,00,
+site_id,int,NO,MUL,NULL,
+category_id,int,NO,MUL,NULL,
+title,varchar(255),YES,,NULL,
+description,text,YES,,NULL,
+status,"enum('BIM ส่งแบบ','ส่ง CM','อนุมัติ','อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)','อนุมัติตามคอมเมนต์ (ต้องแก้ไข)','ไม่อนุมัติ','แก้ไข')",YES,MUL,"BIM ส่งแบบ",
+remarks,text,YES,,NULL,
+created_by,int,NO,MUL,NULL,
+created_at,timestamp,YES,,CURRENT_TIMESTAMP,DEFAULT_GENERATED
+updated_at,timestamp,YES,,NULL,"on update CURRENT_TIMESTAMP"
+updated_by,int,YES,MUL,NULL,
+full_document_number,varchar(20),NO,MUL,NULL,
+send_approval_date,date,YES,,NULL,
+approval_date,date,YES,,NULL,
+previous_status,"enum('BIM ส่งแบบ','ส่ง CM','อนุมัติ','อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)','อนุมัติตามคอมเมนต์ (ต้องแก้ไข)','ไม่อนุมัติ','แก้ไข')",YES,,NULL,
+shop_date,date,YES,,NULL,
+has_newer_revision,tinyint(1),YES,,0,

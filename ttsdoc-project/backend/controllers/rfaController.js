@@ -71,7 +71,8 @@ const uploadRFADocument = async (req, res) => {
 
     // อัปโหลดไฟล์ทั้งหมด (ใช้ FileService)
     for (const file of req.files) {
-      await FileService.uploadRfaDocumentFile(rfaDocumentId, req.user.id, file);
+      // เปลี่ยนจาก newDocumentId เป็น rfaDocumentId
+      await FileService.uploadRfaDocumentFile(rfaDocumentId, req.user.id, file, initialStatus);
     }
 
     res.json({
@@ -294,7 +295,7 @@ const updateRFADocument = async (req, res) => {
 
     // อัปโหลดไฟล์ทั้งหมด (ใช้ FileService)
     for (const file of req.files) {
-      await FileService.uploadRfaDocumentFile(newDocumentId, req.user.id, file);
+      await FileService.uploadRfaDocumentFile(rfaDocumentId, req.user.id, file, initialStatus);
     }
 
     res.json({
