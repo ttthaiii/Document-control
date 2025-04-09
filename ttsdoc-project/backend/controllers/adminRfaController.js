@@ -122,9 +122,9 @@ const updateDocumentStatus = async (req, res) => {
       if (position === 'BIM') {
         allowedStatuses = ['แก้ไข', 'ไม่อนุมัติ', 'อนุมัติตามคอมเมนต์ (ต้องแก้ไข)'];
       } else if (position === 'Adminsite') {
-        allowedStatuses = ['ส่ง CM'];
+        allowedStatuses = ['ส่ง CM', 'แก้ไข'];
       } else if (position === 'Adminsite2') {
-        allowedStatuses = ['ส่ง CM'];
+        allowedStatuses = ['ส่ง CM', 'แก้ไข'];
       } else if (position === 'CM') {
         allowedStatuses = [
           'อนุมัติ',
@@ -154,21 +154,27 @@ const updateDocumentStatus = async (req, res) => {
       if (!document) {
         return res.status(404).json({ success: false, error: 'ไม่พบเอกสาร' });
       }
-  
+      
       const prevStatus = document.status;
       const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  
+      
       // ✅ เตรียมข้อมูลอัปเดต
       const updateFields = {
         status: selectedStatus,
         updated_by: userId,
+        previous_status: prevStatus // เพิ่มบรรทัดนี้
       };
-  
+      
+      // เพิ่มเงื่อนไขวันที่ส่ง Shop
+      if (prevStatus === 'แก้ไข' && selectedStatus === 'BIM ส่งแบบ') {
+        updateFields.shop_date = currentDate;
+      }
+      
       // ✅ เงื่อนไขวันที่ส่งอนุมัติ
       if (prevStatus === 'BIM ส่งแบบ' && selectedStatus === 'ส่ง CM') {
         updateFields.send_approval_date = currentDate;
       }
-  
+      
       // ✅ เงื่อนไขวันที่อนุมัติ
       const approvalStatuses = [
         'อนุมัติ',

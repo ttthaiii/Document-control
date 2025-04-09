@@ -186,12 +186,15 @@ const RfaDashboardContent = ({ user }) => {
   };
 
   // โหลดเอกสาร
-  const loadDocuments = async () => {
+  const loadDocuments = async (forceReload = false) => {
     try {
       setLoading(true);
       setError('');
   
-      const response = await api.get(`/api/user/rfa/documents/${selectedSite}`);
+      // เพิ่มการป้องกัน cache โดยใช้ timestamp
+      const timestamp = forceReload ? `?t=${Date.now()}` : '';
+      const response = await api.get(`/api/user/rfa/documents/${selectedSite}${timestamp}`);
+      
       console.log("📦 Loaded documents for site:", selectedSite, response.data.documents.length);
   
       if (response.data.success) {
@@ -411,7 +414,8 @@ const RfaDashboardContent = ({ user }) => {
     setUpdateDocumentSuccess('');
     
     if (result === 'success') {
-      loadDocuments();
+      // เรียกใช้ loadDocuments พร้อมบังคับให้ไม่ใช้ cache
+      loadDocuments(true);
     }
   };
 
@@ -642,20 +646,17 @@ const RfaDashboardContent = ({ user }) => {
         },
         body: submitData
       });
-
+  
       const data = await response.json();
-
+  
       if (data.success) {
-        // โหลดเอกสารใหม่
-        loadDocuments();
+        // โหลดเอกสารใหม่พร้อมบังคับให้ไม่ใช้ cache
+        loadDocuments(true);
         
         // แสดงข้อความสำเร็จในฟอร์ม
         setUpdateDocumentSuccess('อัพเดทสถานะสำเร็จ');
         
-        // ปิด loading
-        setLoading(false);
-        
-        // แสดง success modal หลังจาก 2 วินาที
+        // ปิด loading หลังจาก 2 วินาที
         setTimeout(() => {
           setSelectedDocument(null);
           setUpdateDocumentSuccess('');
@@ -715,7 +716,7 @@ const RfaDashboardContent = ({ user }) => {
         }
         
         // โหลดเอกสารใหม่
-        loadDocuments();
+        loadDocuments(true);
                 
         // ปิด loading
         setLoading(false);

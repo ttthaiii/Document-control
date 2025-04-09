@@ -75,23 +75,38 @@ class FileService {
    * @param {Object} file - ข้อมูลไฟล์ที่ได้จาก multer
    * @returns {Promise<Object>} - ข้อมูลเอกสารที่บันทึกแล้ว
    */
-  static async uploadRfaDocumentFile(rfaDocumentId, userId, file) {
-    const fileInfo = await this.uploadFile(userId, file);
-    
-    // บันทึกความสัมพันธ์กับเอกสาร RFA
-    const fileId = await DocumentModel.createRfaDocumentFile(
-      rfaDocumentId,
-      userId,
-      fileInfo.fileName,
-      fileInfo.fileUrl,
-      fileInfo.googleFileId,
-      file.mimetype
-    );
-    
-    return {
-      ...fileInfo,
-      rfaDocumentFileId: fileId
-    };
+  static async uploadRfaDocumentFile(rfaDocumentId, userId, file, status) {
+    return Database.transaction(async (connection) => {
+      // ดึงสถานะปัจจุบันของเอกสาร
+      const [document] = await connection.query(
+        'SELECT status FROM rfa_documents WHERE id = ?',
+        [rfaDocumentId]
+      );
+      
+      const currentStatus = document[0]?.status || 'unknown';
+      
+      // อัพโหลดไฟล์ใหม่และบันทึกพร้อมสถานะ
+      // ตรวจสอบจากโค้ดเดิมว่าใช้ driveService หรือฟังก์ชันอื่น
+      const uploadResult = await driveService.uploadFile(file.path, file.originalname, file.mimetype);
+      
+      // สร้างตัวแปรที่จำเป็น
+      const fileName = file.originalname;
+      const fileUrl = uploadResult.webViewLink || uploadResult.webContentLink;
+      const googleFileId = uploadResult.id;
+      
+      await connection.query(`
+        INSERT INTO rfa_document_files
+        (rfa_document_id, document_status, file_name, file_url, google_file_id, created_by)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [rfaDocumentId, currentStatus, fileName, fileUrl, googleFileId, userId]);
+      
+      // อัพเดตวันที่ในตาราง rfa_documents
+      await connection.query(`
+        UPDATE rfa_documents 
+        SET updated_at = NOW() 
+        WHERE id = ?
+      `, [rfaDocumentId]);
+    });
   }
   
   /**

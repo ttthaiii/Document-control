@@ -278,11 +278,18 @@ const updateRFADocument = async (req, res) => {
       );
     } else {
       // อัปเดตเอกสารเดิม
-      await RfaModel.updateDocumentStatus(
-        documentId,
-        status || 'BIM ส่งแบบ',
-        req.user.id
-      );
+      const updateFields = {
+        status: status || 'BIM ส่งแบบ',
+        updated_by: req.user.id,
+        previous_status: document.status
+      };
+      
+      // ถ้าเปลี่ยนจากแก้ไขเป็น BIM ส่งแบบ
+      if (document.status === 'แก้ไข' && status === 'BIM ส่งแบบ') {
+        updateFields.shop_date = new Date().toISOString().split('T')[0];
+      }
+      
+      await RfaModel.updateDocumentFields(documentId, updateFields);
     }
 
     // อัปโหลดไฟล์ทั้งหมด (ใช้ FileService)

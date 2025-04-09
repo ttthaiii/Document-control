@@ -164,6 +164,7 @@ const RfaAdminContent = ({ user }) => {
   // ฟังก์ชันสำหรับจัดการการส่งฟอร์มอัพเดทสถานะ
   const handleStatusUpdateSubmit = async (formData) => {
     setIsSubmitting(true);
+    console.log('Sending update request with data:', formData);
     
     const submitData = new FormData();
     submitData.append('documentId', formData.documentId);
@@ -179,10 +180,12 @@ const RfaAdminContent = ({ user }) => {
 
     try {
       const response = await api.post('/api/user/rfa/update-status', submitData);
-
+      console.log('Update response:', response.data);
+  
       if (response.data.success) {
-        // โหลดเอกสารใหม่
-        loadDocuments();
+        // โหลดเอกสารใหม่พร้อมบังคับให้ไม่ใช้ cache
+        console.log('Reloading documents with force refresh...');
+        loadDocuments(true);
         
         // แสดงข้อความสำเร็จในฟอร์ม
         setSuccessMessage('อัพเดทสถานะสำเร็จ');

@@ -108,10 +108,11 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
    */
   static async createNewRevision(document, newRevisionNumber, userId, status) {
     return Database.transaction(async (connection) => {
+      // สร้างเอกสารใหม่
       const [result] = await connection.query(`
         INSERT INTO rfa_documents 
-        (site_id, category_id, document_number, revision_number, created_by, updated_by, title, status, full_document_number, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        (site_id, category_id, document_number, revision_number, created_by, updated_by, title, status, full_document_number, previous_status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
       `, [
         document.site_id,
         document.category_id,
@@ -121,8 +122,15 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
         userId,
         document.title,
         status,
-        document.full_document_number
+        document.full_document_number,
+        null // ไม่มี previous_status สำหรับเอกสารใหม่
       ]);
+      
+      // ทำเครื่องหมายเอกสารเก่าว่ามี revision ใหม่แล้ว
+      await connection.query(
+        'UPDATE rfa_documents SET has_newer_revision = TRUE WHERE id = ?',
+        [document.id]
+      );
       
       return result.insertId;
     });
@@ -257,22 +265,26 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
   static async getDocumentsBySite(siteId) {
     const documents = [];
     
-    // ดึงข้อมูลพื้นฐานของเอกสาร
+    // ดึงข้อมูลเอกสาร RFA
     const rfaDocs = await Database.query(`
       SELECT 
         r.id,
         r.document_number,
         r.revision_number,
         r.status,
+        r.previous_status,
         r.title,
         r.full_document_number, 
         DATE_FORMAT(r.created_at, '%d/%m/%Y') as created_at,
+        DATE_FORMAT(r.shop_date, '%d/%m/%Y') as shop_date,
         DATE_FORMAT(r.send_approval_date, '%d/%m/%Y') as send_approval_date,
         DATE_FORMAT(r.approval_date, '%d/%m/%Y') as approval_date,
+        r.has_newer_revision,
         u.username as created_by_name,
         uu.username as updated_by_name,
         wc.category_name,
-        wc.category_code
+        wc.category_code,
+        DATE_FORMAT(r.updated_at, '%d/%m/%Y') as updated_at
       FROM rfa_documents r
       JOIN users u ON r.created_by = u.id
       LEFT JOIN users uu ON r.updated_by = uu.id
@@ -281,19 +293,37 @@ static async createRfaDocument(siteId, categoryId, documentNumber, revisionNumbe
       ORDER BY r.created_at DESC
     `, [siteId]);
     
-    // ดึงข้อมูลไฟล์แนบสำหรับแต่ละเอกสาร
+    // ดึงข้อมูลไฟล์แนบสำหรับแต่ละเอกสาร - แก้ไขเพื่อดึงเฉพาะไฟล์ล่าสุดตามสถานะปัจจุบัน
     for (const doc of rfaDocs) {
+      // ดึงไฟล์ล่าสุดที่ตรงกับสถานะปัจจุบันของเอกสาร
       const files = await Database.query(`
         SELECT file_name, file_url, google_file_id
         FROM rfa_document_files
-        WHERE rfa_document_id = ?
+        WHERE rfa_document_id = ? AND document_status = ?
         ORDER BY id DESC
-      `, [doc.id]);
+        LIMIT 1
+      `, [doc.id, doc.status]);
       
-      documents.push({
-        ...doc,
-        files: files
-      });
+      // ถ้าไม่มีไฟล์ที่ตรงกับสถานะปัจจุบัน ให้ดึงไฟล์ล่าสุดแทน
+      if (files.length === 0) {
+        const latestFiles = await Database.query(`
+          SELECT file_name, file_url, google_file_id
+          FROM rfa_document_files
+          WHERE rfa_document_id = ?
+          ORDER BY id DESC
+          LIMIT 1
+        `, [doc.id]);
+        
+        documents.push({
+          ...doc,
+          files: latestFiles
+        });
+      } else {
+        documents.push({
+          ...doc,
+          files: files
+        });
+      }
     }
     
     return documents;

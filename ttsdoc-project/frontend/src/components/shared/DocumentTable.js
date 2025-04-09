@@ -24,23 +24,55 @@ const DocumentTable = ({ onRowClick, isAdmin = false }) => {
 
   // คำนวณจำนวนวันที่ค้างดำเนินการ
   const calculatePendingDays = (document) => {
-    if (!document || (!document.updated_at && !document.created_at)) return 0;
+    // ถ้าไม่มีเอกสาร หรือข้อมูลวันที่ไม่ครบ
+    if (!document) return 0;
+  
+    // กรณีที่ 1: เอกสารที่มี revision ใหม่แล้ว
+    if (document.has_newer_revision) {
+      return 0;
+    }
+  
+    // กรณีที่ 2: เอกสารที่อนุมัติแล้วและไม่ต้องแก้ไข
+    if (document.approval_date && 
+        ['อนุมัติ', 'อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)'].includes(document.status)) {
+      return 0;
+    }
+  
+    // กรณีอื่นๆ: คำนวณวันที่ค้างตามปกติ
+    let referenceDate;
     
-    const lastUpdateDate = document.updated_at || document.created_at;
-    
-    let updateDate;
-    
-    if (typeof lastUpdateDate === 'string' && lastUpdateDate.includes('/')) {
-      const parts = lastUpdateDate.split('/');
-      updateDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    // เลือกวันที่อ้างอิงตามสถานะ
+    if (document.status === 'BIM ส่งแบบ') {
+      // ใช้วันที่ส่ง shop (ถ้ามี) หรือวันที่สร้าง
+      referenceDate = document.shop_date || document.created_at;
+    } else if (document.status === 'ส่ง CM') {
+      // ใช้วันที่ส่งอนุมัติ (ถ้ามี) หรือวันที่อัปเดต
+      referenceDate = document.send_approval_date || document.updated_at;
+    } else if (['อนุมัติตามคอมเมนต์ (ต้องแก้ไข)', 'ไม่อนุมัติ', 'แก้ไข'].includes(document.status)) {
+      // ใช้วันที่อนุมัติ (ถ้ามี) หรือวันที่อัปเดต
+      referenceDate = document.approval_date || document.updated_at;
     } else {
-      updateDate = new Date(lastUpdateDate);
+      // กรณีอื่นๆ ใช้วันที่อัปเดตล่าสุด หรือวันที่สร้าง
+      referenceDate = document.updated_at || document.created_at;
     }
     
-    const currentDate = new Date();
+    // ถ้าไม่มีวันที่อ้างอิง
+    if (!referenceDate) return 0;
     
+    // แปลงวันที่จากรูปแบบ dd/mm/yyyy เป็น Date object
+    let updateDate;
+    if (typeof referenceDate === 'string' && referenceDate.includes('/')) {
+      const parts = referenceDate.split('/');
+      updateDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    } else {
+      updateDate = new Date(referenceDate);
+    }
+    
+    // ถ้าวันที่ไม่ถูกต้อง
     if (isNaN(updateDate.getTime())) return 0;
     
+    // คำนวณความแตกต่างของวันที่
+    const currentDate = new Date();
     const diffTime = Math.abs(currentDate - updateDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
@@ -96,7 +128,21 @@ const DocumentTable = ({ onRowClick, isAdmin = false }) => {
                 {isAdmin && <td>{index + 1}</td>}
                 <td>{documentId}</td>
                 <td>{doc.title}</td>
-                {!isAdmin && <td>{doc.created_at || '-'}</td>}
+                {!isAdmin && <td>
+                  {(() => {
+                    console.log('Document data:', doc.id, {
+                      shop_date: doc.shop_date,
+                      created_at: doc.created_at
+                    });
+                    
+                    // กรณีที่ 1: มีวันที่ shop_date - ใช้เมื่อมีการอัปเดตจากแก้ไขเป็น BIM ส่งแบบ
+                    if (doc.shop_date) {
+                      return doc.shop_date;
+                    }
+                    // กรณีที่ 2: ใช้วันที่สร้างเอกสาร
+                    return doc.created_at || '-';
+                  })()}
+                </td>}
                 {!isAdmin && <td>{doc.send_approval_date || '-'}</td>}
                 {!isAdmin && <td>{doc.approval_date || '-'}</td>}
                 <td>{doc.status}</td>
