@@ -26,26 +26,42 @@ export const DOCUMENT_STATUSES = {
   };
   
   export const calculatePendingDays = (document) => {
-    if (!document || (!document.updated_at && !document.created_at)) return 0;
-    
-    const lastUpdateDate = document.updated_at || document.created_at;
-    
+    if (!document) return 0;
+  
+    if (document.has_newer_revision) return 0;
+  
+    if (document.approval_date &&
+      ['อนุมัติ', 'อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)'].includes(document.status)) {
+      return 0;
+    }
+  
+    let referenceDate;
+    if (document.status === 'BIM ส่งแบบ') {
+      referenceDate = document.shop_date || document.created_at;
+    } else if (document.status === 'ส่ง CM') {
+      referenceDate = document.send_approval_date || document.updated_at;
+    } else if (['อนุมัติตามคอมเมนต์ (ต้องแก้ไข)', 'ไม่อนุมัติ', 'แก้ไข'].includes(document.status)) {
+      referenceDate = document.approval_date || document.updated_at;
+    } else {
+      referenceDate = document.updated_at || document.created_at;
+    }
+  
+    if (!referenceDate) return 0;
+  
     let updateDate;
-    
-    if (typeof lastUpdateDate === 'string' && lastUpdateDate.includes('/')) {
-      const parts = lastUpdateDate.split('/');
+    if (typeof referenceDate === 'string' && referenceDate.includes('/')) {
+      const parts = referenceDate.split('/');
       updateDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
     } else {
-      updateDate = new Date(lastUpdateDate);
+      updateDate = new Date(referenceDate);
     }
-    
-    const currentDate = new Date();
-    
+  
     if (isNaN(updateDate.getTime())) return 0;
-    
-    const diffTime = Math.abs(currentDate - updateDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+  
+    const currentDate = new Date();
+    const diffTime = currentDate - updateDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // ✅ ปัดลง
+  
     return diffDays;
   };
   

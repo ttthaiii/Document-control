@@ -1,5 +1,6 @@
 // ttsdoc-project/backend/models/rfaModel.js
 const Database = require('./database');
+const { pool } = require('../config/database');
 
 class RfaModel {
   /**
@@ -8,6 +9,84 @@ class RfaModel {
    * @param {Array} statusFilter - รายการสถานะที่ต้องการกรอง
    * @returns {Promise<Array>} - รายการเอกสาร
    */
+
+  static async getLatestApprovedDocumentsBySites(siteIds, approvalStatuses) {
+    try {
+      // สร้าง array placeholder สำหรับ parameterized query
+      const placeholders = siteIds.map(() => '?').join(',');
+      const statusPlaceholders = approvalStatuses.map(() => '?').join(',');
+      
+      // ปรับปรุง query เพื่อแก้ไขปัญหาการแสดงเอกสารซ้ำ โดยใช้วิธีอื่น
+      const query = `
+        WITH LatestRevisions AS (
+          SELECT 
+            d1.site_id,
+            d1.category_id,
+            d1.document_number,
+            MAX(CAST(d1.revision_number AS UNSIGNED)) as max_revision
+          FROM 
+            rfa_documents d1
+          WHERE 
+            d1.site_id IN (${placeholders}) AND
+            d1.status IN (${statusPlaceholders})
+          GROUP BY 
+            d1.site_id, d1.category_id, d1.document_number
+        ),
+        LatestFiles AS (
+          SELECT 
+            f.rfa_document_id,
+            f.file_url,
+            f.file_name,
+            f.version,
+            ROW_NUMBER() OVER (PARTITION BY f.rfa_document_id ORDER BY f.version DESC) as row_num
+          FROM 
+            rfa_document_files f
+          JOIN 
+            rfa_documents d ON f.rfa_document_id = d.id
+          WHERE 
+            d.status IN (${statusPlaceholders})
+        )
+        SELECT 
+          d.*,
+          '' as category_name,
+          '' as category_code,
+          '' as site_name,
+          COALESCE(lf.file_url, '') as file_url,
+          COALESCE(lf.file_name, '') as file_name,
+          DATE_FORMAT(d.updated_at, '%Y-%m-%d') as approval_date
+        FROM 
+          rfa_documents d
+        JOIN 
+          LatestRevisions lr ON d.site_id = lr.site_id 
+            AND d.category_id = lr.category_id 
+            AND d.document_number = lr.document_number 
+            AND CAST(d.revision_number AS UNSIGNED) = lr.max_revision
+        LEFT JOIN
+          LatestFiles lf ON d.id = lf.rfa_document_id AND lf.row_num = 1
+        WHERE 
+          d.site_id IN (${placeholders}) AND
+          d.status IN (${statusPlaceholders})
+        ORDER BY 
+          d.full_document_number, CAST(d.revision_number AS UNSIGNED) DESC
+      `;
+      
+      // รวมทุก parameter สำหรับ query
+      const parameters = [
+        ...siteIds, 
+        ...approvalStatuses, 
+        ...approvalStatuses, 
+        ...siteIds, 
+        ...approvalStatuses
+      ];
+      
+      const [rows] = await pool.query(query, parameters);
+      return rows;
+    } catch (error) {
+      console.error('Error in getLatestApprovedDocumentsBySites2:', error);
+      throw error;
+    }
+  }
+
   static async getDocumentsByPosition(userId, statusFilter) {
     // ตรวจสอบว่ามีคอลัมน์ updated_by หรือไม่
     const hasUpdatedByColumn = await Database.hasColumn('rfa_documents', 'updated_by');

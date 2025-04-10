@@ -11,3 +11,8 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* 🔥 ซ่อน scroll หลักของหน้าทั้งหมด */
+}

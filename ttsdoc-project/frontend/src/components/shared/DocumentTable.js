@@ -1,6 +1,7 @@
 // src/components/shared/DocumentTable.js
 import React from 'react';
 import { useDocumentContext } from '../../contexts/DocumentContext';
+import { calculatePendingDays } from '../../utils/documentUtils';
 
 const DocumentTable = ({ onRowClick, isAdmin = false }) => {
   const { filteredDocuments, selectedDocument } = useDocumentContext();
@@ -22,44 +23,30 @@ const DocumentTable = ({ onRowClick, isAdmin = false }) => {
     return 'SITE'; // Default
   };
 
-  // คำนวณจำนวนวันที่ค้างดำเนินการ
+/*  // คำนวณจำนวนวันที่ค้างดำเนินการ
   const calculatePendingDays = (document) => {
-    // ถ้าไม่มีเอกสาร หรือข้อมูลวันที่ไม่ครบ
     if (!document) return 0;
   
-    // กรณีที่ 1: เอกสารที่มี revision ใหม่แล้ว
-    if (document.has_newer_revision) {
+    if (document.has_newer_revision) return 0;
+  
+    if (document.approval_date &&
+      ['อนุมัติ', 'อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)'].includes(document.status)) {
       return 0;
     }
   
-    // กรณีที่ 2: เอกสารที่อนุมัติแล้วและไม่ต้องแก้ไข
-    if (document.approval_date && 
-        ['อนุมัติ', 'อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)'].includes(document.status)) {
-      return 0;
-    }
-  
-    // กรณีอื่นๆ: คำนวณวันที่ค้างตามปกติ
     let referenceDate;
-    
-    // เลือกวันที่อ้างอิงตามสถานะ
     if (document.status === 'BIM ส่งแบบ') {
-      // ใช้วันที่ส่ง shop (ถ้ามี) หรือวันที่สร้าง
       referenceDate = document.shop_date || document.created_at;
     } else if (document.status === 'ส่ง CM') {
-      // ใช้วันที่ส่งอนุมัติ (ถ้ามี) หรือวันที่อัปเดต
       referenceDate = document.send_approval_date || document.updated_at;
     } else if (['อนุมัติตามคอมเมนต์ (ต้องแก้ไข)', 'ไม่อนุมัติ', 'แก้ไข'].includes(document.status)) {
-      // ใช้วันที่อนุมัติ (ถ้ามี) หรือวันที่อัปเดต
       referenceDate = document.approval_date || document.updated_at;
     } else {
-      // กรณีอื่นๆ ใช้วันที่อัปเดตล่าสุด หรือวันที่สร้าง
       referenceDate = document.updated_at || document.created_at;
     }
-    
-    // ถ้าไม่มีวันที่อ้างอิง
+  
     if (!referenceDate) return 0;
-    
-    // แปลงวันที่จากรูปแบบ dd/mm/yyyy เป็น Date object
+  
     let updateDate;
     if (typeof referenceDate === 'string' && referenceDate.includes('/')) {
       const parts = referenceDate.split('/');
@@ -67,17 +54,16 @@ const DocumentTable = ({ onRowClick, isAdmin = false }) => {
     } else {
       updateDate = new Date(referenceDate);
     }
-    
-    // ถ้าวันที่ไม่ถูกต้อง
+  
     if (isNaN(updateDate.getTime())) return 0;
-    
-    // คำนวณความแตกต่างของวันที่
+  
     const currentDate = new Date();
-    const diffTime = Math.abs(currentDate - updateDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+    const diffTime = currentDate - updateDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // ✅ ใช้ floor
+  
     return diffDays;
   };
+  */
 
   if (filteredDocuments.length === 0) {
     return (

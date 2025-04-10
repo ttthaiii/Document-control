@@ -38,6 +38,7 @@ router.get('/documents', authenticateUser, userController.getUserDocuments);
 
 // Dashboard routes
 router.get('/dashboard', authenticateUser, userController.getDashboardData);
+router.get('/approved-documents', authenticateUser, rfaController.getApprovedDocuments);
 
 // Document Upload
 router.post('/upload-document', authenticateUser, upload.fields([{ name: 'documents', maxCount: 10 }]), uploadController.uploadFile);
@@ -90,6 +91,7 @@ router.get('/rfa/user-sites', authenticateUser, async (req, res) => {
       if (connection) connection.release();
   }
 });
+
 
 router.get('/rfa/categories/:siteId', requireRFAAccess, rfaController.getCategories);
 

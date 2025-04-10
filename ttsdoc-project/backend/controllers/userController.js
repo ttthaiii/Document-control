@@ -108,6 +108,13 @@ const getUserDocuments = async (req, res) => {
       'WHERE us.user_id = ?',
       [userId]
     );
+    
+    // ดึง RFA เอกสาร (อนุมัติแล้ว หรือทั้งหมดก็ได้)
+    const [documents] = await pool.query(`
+      SELECT d.* FROM rfa_documents d
+      INNER JOIN user_sites us ON d.site_id = us.site_id
+      WHERE us.user_id = ?;
+    `, [userId]);    
 
     return res.json({
       success: true,
@@ -118,9 +125,11 @@ const getUserDocuments = async (req, res) => {
           role: req.user.role,
           jobPosition: userData[0]?.job_position || req.user.jobPosition
         },
-        sites: sites || []
+        sites: sites || [],
+        documents // ✅ เพิ่มตรงนี้
       }
     });
+    
   } catch (error) {
     console.error('Error:', error);
     return res.status(500).json({

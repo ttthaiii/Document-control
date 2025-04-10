@@ -1,4 +1,3 @@
-// ttsdoc-project/backend/controllers/rfaController.js
 const fs = require('fs').promises;
 const { pool } = require('../config/database');
 const driveService = require('../config/googleDrive');
@@ -13,6 +12,8 @@ const UserModel = require('../models/userModel');
 
 const EDITABLE_STATUSES = ['แก้ไข', 'อนุมัติตามคอมเมนต์ (ต้องแก้ไข)', 'ไม่อนุมัติ'];
 const initialStatus = "BIM ส่งแบบ";
+
+const { sendLineNotify } = require('../services/lineNotifyService');
 
 // ตรวจสอบการอนุญาต RFA - คงไว้ แต่อาจย้ายไปที่ roleMiddleware ในอนาคต
 const checkRFAPermission = (jobPosition) => {
@@ -75,6 +76,24 @@ const uploadRFADocument = async (req, res) => {
       await FileService.uploadRfaDocumentFile(rfaDocumentId, req.user.id, file, initialStatus);
     }
 
+    // ดึงข้อมูลโครงการ
+    const [[siteInfo]] = await pool.query(
+      'SELECT site_name, line_group_id FROM sites WHERE id = ?',
+      [siteId]
+    );
+
+    // ดึงลิงก์ของไฟล์แรก (สมมุติว่าแนบไฟล์เดียว)
+    const fileUrl = req.files[0]?.url || '-';
+
+    // ส่ง LINE
+    await sendLineNotify(siteInfo.line_group_id,
+      `📄 เอกสารโครงการ: ${siteInfo.site_name}\n` +
+      `🔢 เลขที่เอกสาร: ${fullDocumentNumber}\n` +
+      `🔄 rev: ${revisionNumber}\n` +
+      `📌 สถานะ: ${initialStatus}\n` +
+      `🔗 ดูไฟล์ที่อัปโหลด: ${fileUrl}`
+    );
+    
     res.json({
       success: true,
       message: 'อัปโหลดเอกสารสำเร็จ',
@@ -295,8 +314,25 @@ const updateRFADocument = async (req, res) => {
 
     // อัปโหลดไฟล์ทั้งหมด (ใช้ FileService)
     for (const file of req.files) {
-      await FileService.uploadRfaDocumentFile(rfaDocumentId, req.user.id, file, initialStatus);
+      await FileService.uploadRfaDocumentFile(newDocumentId, req.user.id, file, status || 'BIM ส่งแบบ');
     }
+    
+    // ดึงข้อมูลโครงการ
+    const [[siteInfo]] = await pool.query(
+      'SELECT site_name, line_group_id FROM sites WHERE id = ?',
+      [document.site_id]
+    );
+
+    // ดึงลิงก์ของไฟล์แรก
+    const fileUrl = req.files[0]?.url || '-';
+
+    await sendLineNotify(siteInfo.line_group_id,
+      `📄 เอกสารโครงการ: ${siteInfo.site_name}\n` +
+      `🔢 เลขที่เอกสาร: ${document.full_document_number}\n` +
+      `🔄 rev: ${newRevisionNumber}\n` +
+      `📌 สถานะ: ${status}\n` +
+      `🔗 ดูไฟล์ที่อัปโหลด: ${fileUrl}`
+    );
 
     res.json({
       success: true,
@@ -320,6 +356,33 @@ const updateRFADocument = async (req, res) => {
   }
 };
 
+// ฟังก์ชันดึงเอกสารที่อนุมัติแล้ว (ของ user ที่มีสิทธิ์เข้าถึง site)
+const getApprovedDocuments = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const sites = await UserModel.getUserSites(userId);
+
+    if (!sites || sites.length === 0) {
+      return res.json({ success: true, documents: [] });
+    }
+
+    const siteIds = sites.map(site => site.id);
+    const approvalStatuses = [
+      'อนุมัติ',
+      'อนุมัติตามคอมเมนต์ (ไม่ต้องแก้ไข)',
+      'อนุมัติตามคอมเมนต์ (ต้องแก้ไข)'
+    ];
+
+    // เรียกใช้เมธอด getLatestApprovedDocumentsBySites จากคลาส RfaModel
+    const documents = await RfaModel.getLatestApprovedDocumentsBySites(siteIds, approvalStatuses);
+
+    return res.json({ success: true, documents });
+  } catch (error) {
+    console.error('Error in getApprovedDocuments:', error);
+    return res.status(500).json({ success: false, error: 'เกิดข้อผิดพลาดในการดึงเอกสารที่อนุมัติแล้ว' });
+  }
+};
+
 module.exports = {
     checkRFAPermission,
     uploadRFADocument,
@@ -328,5 +391,6 @@ module.exports = {
     checkExistingDocument,
     addCategory,
     getRFADocuments,
-    updateRFADocument
+    updateRFADocument,
+    getApprovedDocuments
 };

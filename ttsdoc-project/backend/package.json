@@ -7,12 +7,12 @@
     "build": "echo \"No build step required for backend\" && exit 0",
     "test": "echo \"Skipping tests\" && exit 0"
   },
-  
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "axios": "^1.8.4",
     "bcryptjs": "^3.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

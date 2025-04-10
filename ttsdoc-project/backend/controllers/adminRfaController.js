@@ -5,6 +5,8 @@ const RfaModel = require('../models/rfaModel');
 const DocumentModel = require('../models/documentModel'); // สมมติว่ามีไฟล์นี้
 const driveService = require('../config/googleDrive');
 const Database = require('../models/database'); 
+const { sendLineNotify } = require('../services/lineNotifyService');
+
 // ดึงเอกสารตามตำแหน่งและสถานะที่กำหนด
 const getDocumentsByPosition = async (req, res) => {
     try {
@@ -28,10 +30,10 @@ const getDocumentsByPosition = async (req, res) => {
         let statusFilter;
         switch(position) {
             case 'Adminsite':
-                statusFilter = ['BIM ส่งแบบ'];
+                statusFilter = ['BIM ส่งแบบ', 'ส่ง CM'];
                 break;
             case 'Adminsite2':
-                statusFilter = ['BIM ส่งแบบ', 'ส่ง CM'];
+                statusFilter = ['BIM ส่งแบบ'];
                 break;
             case 'CM':
                 statusFilter = ['ส่ง CM'];
@@ -74,10 +76,10 @@ const searchDocuments = async (req, res) => {
         let statusFilter;
         switch(position) {
             case 'Adminsite':
-                statusFilter = ['BIM ส่งแบบ'];
+                statusFilter = ['BIM ส่งแบบ', 'ส่ง CM'];
                 break;
             case 'Adminsite2':
-                statusFilter = ['BIM ส่งแบบ', 'ส่ง CM'];
+                statusFilter = ['BIM ส่งแบบ'];
                 break;
             case 'CM':
                 statusFilter = ['ส่ง CM'];
@@ -183,6 +185,24 @@ const updateDocumentStatus = async (req, res) => {
       INSERT INTO upload_logs (user_id, rfa_document_id, status, created_at)
       VALUES (?, ?, ?, NOW())
     `, [userId, documentId, 'status_updated']);
+
+    // ดึงข้อมูลโครงการจาก DB
+    const [[siteInfo]] = await Database.query(
+      'SELECT site_name, line_group_id FROM sites WHERE id = ?',
+      [document.site_id]
+    );
+
+    // ใช้ไฟล์แรกเป็นลิงก์แจ้งเตือน (ถ้ามี)
+    const fileUrl = req.files?.[0]?.url || '-';
+
+    // ส่งข้อความแจ้งเตือน
+    await sendLineNotify(siteInfo.line_group_id,
+      `📄 เอกสารโครงการ: ${siteInfo.site_name}\n` +
+      `🔢 เลขที่เอกสาร: ${document.full_document_number}\n` +
+      `🔄 rev: ${document.revision_number}\n` +
+      `📌 สถานะ: ${selectedStatus}\n` +
+      `🔗 ดูไฟล์ที่อัปโหลด: ${fileUrl}`
+    );    
 
     res.json({
       success: true,
